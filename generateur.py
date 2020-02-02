@@ -27,12 +27,12 @@ def extraction_commande(path):
     """
     with open(path, "r") as fichier:
         lines = fichier.readlines()
-        commande = np.zeros((len(lines), len(lines[0])))
-        nb_reference = len(lines)
+        nb_references = len(lines)
+        commande = np.zeros((nb_references, nb_references))
 
-        for index_line, line in enumerate(lines):
+        for (index_line, line) in enumerate(lines):
             line = line.split(" ")
-            for index_ref in range(nb_reference):
+            for index_ref in range(nb_references):
                 commande[index_line, index_ref] = line[index_ref]
 
     return commande
@@ -63,7 +63,7 @@ def matrice_proba(nb_ref):
 
     # -- Paramètres -- #
     # La norme 1 de proba doit être égale à 1
-    alpha_1 = (nb_ref / 3) * (nb_ref / 3 - 1)
+    alpha_1 = (nb_ref / 3) * (nb_ref / 3 - 1) * 3
     alpha = 1 / alpha_1
     epsilon = alpha / randint(2, 10)
     taille_bloc = nb_ref // 3
@@ -249,10 +249,10 @@ def generation_commande(nb_ref, nom_instance):
     try:
         probabilite = matrice_proba(nb_ref)
         store_matrice(probabilite, nom_instance + ".txt")
+        return probabilite
+
     except DimensionError:
         print("Le nombre de référence doit être un multiple de 3 différent de 3")
-
-    return probabilite
 
 
 if __name__ == "__main__":
@@ -261,7 +261,9 @@ if __name__ == "__main__":
     doctest.testmod()
 
     # -- Paramètres -- #
-    NB_REF = 9
+    NB_REF = 60
     PROBA = "test"
 
     generation_commande(NB_REF, PROBA)
+    PROBA = extraction_commande("test.txt")
+    print(PROBA)

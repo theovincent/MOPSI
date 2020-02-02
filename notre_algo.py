@@ -1,4 +1,9 @@
-import numpy.random as rd
+"""
+Ce module permet de calculer un emplacement performant de l'entrepôt.
+Nous utilisons ici une descente locale.
+"""
+from random import randint
+from pathlib import Path
 from evaluation import evalue
 from alea import alea
 from generateur import extraction_commande
@@ -6,20 +11,25 @@ from generateur import extraction_commande
 
 def permutation_rangee(positions):
     """
-    Effectue une permutation de rangées aléatoire
-    >>> positions = [[2, 3], [1, 0]]
-    >>> permutation_rangee(positions)
-    >>> positions
+    Effectue une permutation de deux rangées aléatoirement choisit.
+
+    Parametres:
+        position (Array de taille (longueur_rangees, nb_rangees): la position
+        des références dans l'entrepôt.
+
+    >>> pos = [[2, 3], [1, 0]]
+    >>> permutation_rangee(pos)
+    >>> pos
     [[3, 2], [0, 1]]
     """
     longeur_rangees = len(positions)
     nb_rangees = len(positions[0])
 
     # On prend 2 indices de rangées differentes
-    rangee1 = rd.randint(0, nb_rangees)
-    rangee2 = rd.randint(0, nb_rangees)
+    rangee1 = randint(0, nb_rangees - 1)
+    rangee2 = randint(0, nb_rangees - 1)
     while rangee2 == rangee1:
-        rangee2 = rd.randint(0, nb_rangees)
+        rangee2 = randint(0, nb_rangees - 1)
 
     # On les échange
     for profondeur in range(longeur_rangees):
@@ -31,21 +41,25 @@ def permutation_rangee(positions):
 def permutation_element(positions):
     """
     Effectue une permutation de deux éléments.
-    Les permutations intra rangée ne servent à rien,
-    on les interdits.
-    >>> positions = [[0, 1]]
-    >>> permutation_element(positions)
-    >>> positions
+    Les permutations intra rangée ne servent à rien, on les interdits.
+
+    Parametres:
+        position (Array de taille (longueur_rangees, nb_rangees): la position
+        des références dans l'entrepôt.
+
+    >>> pos = [[0, 1]]
+    >>> permutation_element(pos)
+    >>> pos
     [[1, 0]]
     """
     longeur_rangees = len(positions)
     nb_rangees = len(positions[0])
 
     # On prend 2 indices d'éléments différents
-    element1 = [rd.randint(0, longeur_rangees), rd.randint(0, nb_rangees)]
-    element2 = [rd.randint(0, longeur_rangees), rd.randint(0, nb_rangees)]
+    element1 = [randint(0, longeur_rangees - 1), randint(0, nb_rangees - 1)]
+    element2 = [randint(0, longeur_rangees - 1), randint(0, nb_rangees - 1)]
     while element2[1] == element1[1]:
-        element2[1] = rd.randint(0, nb_rangees)
+        element2[1] = randint(0, nb_rangees - 1)
 
     # On les échange
     memoire = positions[element1[0]][element1[1]]
@@ -53,33 +67,41 @@ def permutation_element(positions):
     positions[element2[0]][element2[1]] = memoire
 
 
-def notre_algo(positionnement, nb_permutation, historique):
+def notre_algo(positions, nb_permutations, proba):
     """
     Permet de trouver le minimum local de la fonction evalue.
     Prend comme point de départ le positionnement obtenu avec
-    une technique.
-    Effectue nb_ite_rangee sur les rangees et
-    nb_ite_element entre deux elements quelconques.
+    une méthode.
+    Effectue nb_permutations permutations sur le positionnement
+    d'origine. Le voisinage est tiré aléatoirement.
+
+    Parametres:
+        position (Array de taille (longueur_rangees, nb_rangees): la position
+        des références dans l'entrepôt précédemment calculé au moyen d'une méthode.
+
+        nb_permutations (Entier): le nombre de permutation à effectuer.
+
+        praba (Array de taille (nb_ref, nb_ref)): matrice des probabilités des commandes.
     """
     # Initialisation des variables
-    minimum = evalue(positionnement, historique)
-    pos_opt = positionnement.copy()
+    pos_opt = positions.copy()
+    minimum = evalue(positions, proba)
 
-    for index_permut in range(nb_permutation):
+    for index_permut in range(nb_permutations):
         # On modifie le positionnement en selectionnant au hasard le voisinnage
-        voisinnage = 0
+        voisinnage = randint(0, 2)
+        mem = positions.copy()
         if voisinnage:
-            permutation_rangee(positionnement)
+            permutation_rangee(positions)
         else:
-            permutation_element(positionnement)
+            permutation_element(positions)
 
         # On regarde si le nouveau positionnement fait mieux
-        valeur = evalue(positionnement, historique)
+        valeur = evalue(positions, proba)
         if valeur < minimum:
             minimum = valeur
-            pos_opt = positionnement.copy()
+            pos_opt = positions.copy()
             print("La nouvelle valeur de notre positionnement est {}".format(minimum))
-            print(pos_opt)
 
     return pos_opt
 
@@ -89,14 +111,26 @@ if __name__ == "__main__":
     import doctest
     doctest.testmod()
 
-    # Paramètre pour charger l'historique des commandes
-    path_commande = "test.txt"
-    commande = extraction_commande(path_commande)
+    # Paramètre pour charger les probabilités des commandes
+    PATH_COMMANDE = Path("test.txt")
+    PROBA = extraction_commande(PATH_COMMANDE)
+    NB_REF = len(PROBA)
+
+    # Définition arbitraire de la longueur et du nombre des rangées
+    LONGUEUR_RANGEES = 6
+    NB_RANGEES = NB_REF // 6
 
     # Calcul de la position de manière aléatoire
-    position = alea(3, 3)
+    POSITIONS = alea(LONGUEUR_RANGEES, NB_RANGEES)
+    VAL_ALEA = evalue(POSITIONS, PROBA)
     print("Le positionnement aléatoire est :")
-    print(position)
+    print(POSITIONS)
 
     # Calcul de la position optimale
-    print(notre_algo(position.copy(), 10, commande))
+    POSITIONS_OPT = notre_algo(POSITIONS, 1000, PROBA)
+    print("La solution trouvée est :")
+    print(POSITIONS_OPT)
+    VAL_NOTRE_ALGO = evalue(POSITIONS_OPT, PROBA)
+
+    # Résultats
+    print("Nous sommes passé de {} à {}".format(VAL_ALEA, VAL_NOTRE_ALGO))
