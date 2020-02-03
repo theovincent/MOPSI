@@ -3,18 +3,20 @@ import random
 # rappel : les rangées sont numérotées à partir de 0
 
 
+
 ## Classer les références selon leur fréquence d'apparition
 
 
 # historique est une matrice 2D (nb_ref)*(nb_ref) donnant les probas des couples de ref
 # frequence est une matrice 1D (nb_ref) donnant la proba d'une ref
 def from_historique_to_frequence(historique):
+    """ Returns return frequence - 1"""
     nb_ref = len(historique[0])
     frequence = np.zeros(nb_ref)
     for ref in range(nb_ref):
         for ref2 in range(nb_ref):
             frequence[ref] += historique[ref, ref2]
-    return frequence
+    return frequence - 1
 
 
 # donne le rang de chaque element de la liste (si la liste était triée)
