@@ -14,7 +14,7 @@ def from_historique_to_frequence(historique):
     for ref in range(nb_ref):
         for ref2 in range(nb_ref):
             frequence[ref] += historique[ref, ref2]
-    return frequence + 1
+    return frequence + 2
 
 
 # donne le rang de chaque element de la liste (si la liste était triée)
