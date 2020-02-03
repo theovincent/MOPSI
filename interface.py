@@ -14,7 +14,7 @@ LONGUEUR_RANGEES = 6
 NB_RANGEES = 10
 # Attention : le nombre de réference doit être un multiple de trois
 NB_REF = LONGUEUR_RANGEES * NB_RANGEES
-NOM_INSTANCE_THEO = "essai_6fois10"
+NOM_INSTANCE_THEO = "essai_{}fois{}".format(LONGUEUR_RANGEES, NB_RANGEES)
 # NOM_INSTANCE_PIA =
 NOM_INSTANCE = NOM_INSTANCE_THEO
 

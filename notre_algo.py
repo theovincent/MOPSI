@@ -9,6 +9,29 @@ from alea import alea
 from generateur import extraction_commande
 
 
+def permutation_cyclique(positions):
+    """
+    Effectue une permatution cyclique des rangées.
+
+    Parametres:
+        position (Array de taille (longueur_rangees, nb_rangees): la position
+        des références dans l'entrepôt.
+    >>> pos = [[2, 3, 4], [1, 0, 5]]
+    >>> permutation_cyclique(pos)
+    >>> pos
+    [[3, 4, 2], [0, 5, 1]]
+    """
+    longeur_rangees = len(positions)
+    nb_rangees = len(positions[0])
+
+    # On effectue le cyclique
+    for profondeur in range(longeur_rangees):
+        memoire = positions[profondeur][0]
+        for index_rangee in range(nb_rangees - 1):
+            positions[profondeur][index_rangee] = positions[profondeur][index_rangee + 1]
+        positions[profondeur][-1] = memoire
+
+
 def permutation_rangee(positions):
     """
     Effectue une permutation de deux rangées aléatoirement choisit.
@@ -90,11 +113,12 @@ def notre_algo(positions, nb_permutations, proba):
     for index_permut in range(nb_permutations):
         # On modifie le positionnement en selectionnant au hasard le voisinnage
         voisinnage = randint(0, 2)
-        mem = positions.copy()
-        if voisinnage:
+        if voisinnage == 0:
             permutation_rangee(positions)
-        else:
+        elif voisinnage == 1:
             permutation_element(positions)
+        else:
+            permutation_cyclique(positions)
 
         # On regarde si le nouveau positionnement fait mieux
         valeur = evalue(positions, proba)
@@ -117,8 +141,8 @@ if __name__ == "__main__":
     NB_REF = len(PROBA)
 
     # Définition arbitraire de la longueur et du nombre des rangées
-    LONGUEUR_RANGEES = 6
-    NB_RANGEES = NB_REF // 6
+    LONGUEUR_RANGEES = 1
+    NB_RANGEES = NB_REF // LONGUEUR_RANGEES
 
     # Calcul de la position de manière aléatoire
     POSITIONS = alea(LONGUEUR_RANGEES, NB_RANGEES)
@@ -127,7 +151,7 @@ if __name__ == "__main__":
     print(POSITIONS)
 
     # Calcul de la position optimale
-    POSITIONS_OPT = notre_algo(POSITIONS, 1000, PROBA)
+    POSITIONS_OPT = notre_algo(POSITIONS, 100, PROBA)
     print("La solution trouvée est :")
     print(POSITIONS_OPT)
     VAL_NOTRE_ALGO = evalue(POSITIONS_OPT, PROBA)
