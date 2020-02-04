@@ -106,7 +106,7 @@ def positionnement_to_entrepot(positionnement):
     Permet de créer un entrepot à partir de positionnement
 
     Parametres:
-        positionnement (Array de taille (longueur_rangees, nb_rangees): la position
+        positionnement (Array de taille (longueur_rangees, nb_rangees)): la position
         des références dans l'entrepôt.
 
     Return:
