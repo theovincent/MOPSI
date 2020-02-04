@@ -19,7 +19,6 @@ from alea import alea
 from generateur import extraction_commande
 
 
-
 # --- S-shape --- #
 def sshape_2(entrepot, commande, longueur_rangees, nb_rangees):
     """

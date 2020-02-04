@@ -4,6 +4,7 @@ et de calculer les différents emplacements que propose les algorithmes.
 """
 
 from alea import alea
+# from abc_classique import ABC
 from notre_algo import notre_algo
 from evaluation import evalue
 from generateur import generation_commande
@@ -31,11 +32,14 @@ print(HISTORIQUE)
 print("Calcul des positionnements...")
 # Partie calcul
 POSITIONNEMENT_ALEA = alea(LONGUEUR_RANGEES, NB_RANGEES)
+# POSITIONNEMENT_ABC = ABC(HISTORIQUE, NB_RANGEES, LONGUEUR_RANGEES)
 POSITIONNEMENT_NOTRE_ALGO = notre_algo(POSITIONNEMENT_ALEA.copy(), 20, HISTORIQUE)
 
 # Partie affichage
 print("Le positionnement aléatoire est :")
 print(POSITIONNEMENT_ALEA)
+print("Le positionnement ABC est :")
+# print(POSITIONNEMENT_ABC)
 print("Notre positionnement est :")
 print(POSITIONNEMENT_NOTRE_ALGO)
 
@@ -43,10 +47,12 @@ print(POSITIONNEMENT_NOTRE_ALGO)
 # --- Evaluation des différents emplacements --- #
 print("Evaluation des positionnement...")
 ALEA = evalue(POSITIONNEMENT_ALEA, HISTORIQUE)
+# ABC = evalue(POSITIONNEMENT_ABC, HISTORIQUE)
 NOTRE_ALGO = evalue(POSITIONNEMENT_NOTRE_ALGO, HISTORIQUE)
 
 # Affichage des résultats
 print("Le résultat pour le positionnement aléaoire est de {}".format(ALEA))
+# print("Le résultat pour le positionnement ABC est de {}".format(ABC))
 print("Le résultat pour notre positionnement est de {}".format(NOTRE_ALGO))
 
 
