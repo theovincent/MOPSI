@@ -9,27 +9,41 @@ from alea import alea
 from generateur import extraction_commande
 
 
-def permutation_cyclique(positions):
+def permutation_cyclique(positions, sens):
     """
     Effectue une permatution cyclique des rangées.
 
     Parametres:
         position (Array de taille (longueur_rangees, nb_rangees): la position
         des références dans l'entrepôt.
+
+        sens (Booléreen): donne le sens du cycle
+
     >>> pos = [[2, 3, 4], [1, 0, 5]]
-    >>> permutation_cyclique(pos)
+    >>> permutation_cyclique(pos, True)
     >>> pos
     [[3, 4, 2], [0, 5, 1]]
+    >>> pos = [[2, 3, 4], [1, 0, 5]]
+    >>> permutation_cyclique(pos, False)
+    >>> pos
+    [[4, 2, 3], [5, 1, 0]]
     """
     longeur_rangees = len(positions)
     nb_rangees = len(positions[0])
 
     # On effectue le cyclique
-    for profondeur in range(longeur_rangees):
-        memoire = positions[profondeur][0]
-        for index_rangee in range(nb_rangees - 1):
-            positions[profondeur][index_rangee] = positions[profondeur][index_rangee + 1]
-        positions[profondeur][-1] = memoire
+    if sens:
+        for profondeur in range(longeur_rangees):
+            memoire = positions[profondeur][0]
+            for index_rangee in range(nb_rangees - 1):
+                positions[profondeur][index_rangee] = positions[profondeur][index_rangee + 1]
+            positions[profondeur][-1] = memoire
+    else:
+        for profondeur in range(longeur_rangees):
+            memoire = positions[profondeur][-1]
+            for index_rangee in range(nb_rangees - 1, 0, -1):
+                positions[profondeur][index_rangee] = positions[profondeur][index_rangee - 1]
+            positions[profondeur][0] = memoire
 
 
 def permutation_rangee(positions):
@@ -118,7 +132,8 @@ def notre_algo(positions, nb_permutations, proba):
         elif voisinnage == 1:
             permutation_element(positions)
         else:
-            permutation_cyclique(positions)
+            sens = randint(0, 1)
+            permutation_cyclique(positions, sens)
 
         # On regarde si le nouveau positionnement fait mieux
         valeur = evalue(positions, proba)

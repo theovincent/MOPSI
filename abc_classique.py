@@ -3,20 +3,19 @@ import random
 # rappel : les rangées sont numérotées à partir de 0
 
 
-
-## Classer les références selon leur fréquence d'apparition
+# Classer les références selon leur fréquence d'apparition
 
 
 # historique est une matrice 2D (nb_ref)*(nb_ref) donnant les probas des couples de ref
 # frequence est une matrice 1D (nb_ref) donnant la proba d'une ref
 def from_historique_to_frequence(historique):
+    """ Returns return frequence - 1"""
     nb_ref = len(historique[0])
     frequence = np.zeros(nb_ref)
     for ref in range(nb_ref):
         for ref2 in range(nb_ref):
             frequence[ref] += historique[ref, ref2]
-    return frequence
-
+    return frequence - 1
 
 
 # donne le rang de chaque element de la liste (si la liste était triée)
@@ -36,6 +35,7 @@ def rang_triee(liste):
         rang[ordre[i]] = i
     return rang
 
+
 # donne le rang de chaque référence (en fonction de leur fréquence)
 def rang_frequence(historique):
     frequence = from_historique_to_frequence(historique)
@@ -43,7 +43,7 @@ def rang_frequence(historique):
     return rang_ref
 
 
-## Regrouper les rangées en 3 groupes
+# Regrouper les rangées en 3 groupes
 
 
 # rangees_classe[i] correspond à la liste (pas un array) des rangées dans la classe i
@@ -93,7 +93,7 @@ def classify_rangees(nb_rangees):
         nb_rangees_gauche = limite_gauche
         nb_rangees_droite = nb_rangees_gauche + 1
         # on prendra autant de rangees de classe B de chaque côté
-        nb_rangees_classeB = int(nb_rangees_gauche/3) + 1 # arbitraire
+        nb_rangees_classeB = int(nb_rangees_gauche/3) + 1  # arbitraire
         # à gauche on part de la rangee du milieu (celle de classe A)
         # et on compte nb_rangees_classeB vers la gauche, et on les mets dans la classe B
         # le reste vers la gauche va dans la classe C
@@ -110,7 +110,7 @@ def classify_rangees(nb_rangees):
     return rangees_classe
 
 
-## Positionner les références selon la méthode ABC
+# Positionner les références selon la méthode ABC
 
 
 # crée 3 classes de références, rangées par ordre de grandeur de fréquence d'apparition
@@ -147,26 +147,26 @@ def ABC(historique, nb_rangees, longueur_rangees):
     # classe A
     compteur_ref = 0
     for rangee in rangees_classe[0]:
-        for casier in range(longueur_rangee):
+        for casier in range(longueur_rangees):
             compteur_ref += 1
             positionnement[casier, rangee] = classeA[compteur_ref]
     # classe B
     compteur_ref = 0
     for rangee in rangees_classe[1]:
-        for casier in range(longueur_rangee):
+        for casier in range(longueur_rangees):
             compteur_ref += 1
             positionnement[casier, rangee] = classeB[compteur_ref]
     # classe C
     compteur_ref = 0
     for rangee in rangees_classe[2]:
-        for casier in range(longueur_rangee):
+        for casier in range(longueur_rangees):
             compteur_ref += 1
             positionnement[casier, rangee] = classeC[compteur_ref]
 
     return positionnement
 
 
-## Tests
+# Tests
 
 
 if __name__ == "__main__":
