@@ -21,56 +21,58 @@ from generateur import extraction_commande
 
 
 
-def sshape(longueur_rangees, nb_rangees, commande):
+def sshape(longueur_rangees, nb_rangees, position1, position2):
     """
     Calcul le coût d'aller chercher la commande.
 
     Parametres:
-        commande (array de taille 2) : commande[0] correspond à la position [rangee, casier] de la 1e référence à aller chercher, commande[1] à la position de la 2e
-
         longueur_rangees (Entier): la longueur des rangées dans l'entrepôt.
 
         nb_rangees (Entier): le nombre de rangées dans l'entrepôt.
 
+        position1 (liste de 2 entiers) : [rangee1, casier1] correspondant au 1e emplacement auquel se rendre
+
+        position2 (liste de 2 entiers) : [rangee2, casier2] correspondant au 2e emplacement auquel se rendre
+
     Return:
         temps (Entier): le nombre de casse que met le robot à aller les deux références
 
-    >>> sshape(3, 3, [[0, 2], [1, 0]])
+    >>> sshape(3, 3, [0, 2], [1, 0])
     14
-    >>> sshape(3, 3, [[1, 0], [1, 1]])
-    12
-    >>> sshape(3, 3, [[0, 2], [2, 0]])
+    >>> sshape(3, 3, [1, 0], [1, 1])
+    10
+    >>> sshape(3, 3, [0, 2], [2, 0])
     18
+    >>> sshape(3, 3, [1, 2], [2, 2])
+    12
     """
+    rangee1 = position1[0]
+    casier1 = position1[1]
+    rangee2 = position2[0]
+    casier2 = position2[1]
+
     # Il y a les couloirs à prendre en compte
     largeur_entrepot = nb_rangees * 2 + 1
     longueur_entrepot = longueur_rangees + 2
-    rangee1 = commande[0][0]
-    casier1 = commande[0][1]
-    rangee2 = commande[1][0]
-    casier2 = commande[1][1]
 
     # L'entrée est au milieu de l'entrepot. largeur_entrepot est impaire.
-    entree = largeur_entrepot // 2
-    num_rangee1 = 2 * rangee1 + 1
     # On passe à droite des rangées
-    num_allee_ref1 = num_rangee1 + 1
-    # Le coût de récupération de la première référence est :
-    # temps = coût_d'entrée + coût_devant_allée1 + cout_traverser_allée1
-    temps = 1 + abs(num_allee_ref1 - entree) + (longueur_entrepot - 1)
+    entree = largeur_entrepot // 2 + 1
+    allee_rangee1 = 3 + 2*rangee1
+    allee_rangee2 = 3 + 2*rangee2
 
-    if rangee1 == rangee2:
-        # On fait le même chemin pour le retour
-        temps *= 2
-    else:
-        num_rangee2 = 2 * rangee2 + 1
-        # On passe à droite des rangées
-        num_allee_ref2 = num_rangee2 + 1
-        # Le coût pour aller prendre la 2ième référence et revenir est :
-        # coût_devant_allée2 + coût_tranversée_allée2 + coût_devant_sortie + coût_sortie
-        temps += 2*abs(rangee2-rangee1) + (longueur_entrepot - 1) + abs(num_allee_ref2 - entree) + 1
+    if rangee1==rangee2 :
+        # le temps de récupération le plus rapide si les 2 réf sont dans la même rangée est :
+        temps = 2*(1 + abs(allee_rangee1 - entree) + (longueur_rangees - min(casier1, casier2)))
+        return temps
 
-    return temps
+    # Le temps de récupération sans rebrousser chemin est :
+    temps1 = 1 + abs(allee_rangee1 - entree) + (longueur_entrepot - 1) + abs(allee_rangee1 - allee_rangee2) + (longueur_entrepot - 1) + abs(allee_rangee2 - entree) + 1
+
+    # Le temps de récupération en rebroussant chemin pour les 2 références est :
+    temps2 = 1 + abs(allee_rangee1 - entree) + 2*(longueur_rangees - casier1) + abs(allee_rangee1 - allee_rangee2) + 2*(longueur_rangees - casier2) + abs(allee_rangee2 - entree) + 1
+
+    return min(temps1, temps2)
 
 
 
@@ -97,10 +99,12 @@ def evalue_entrepot(longueur_rangees, nb_rangees):
         for casier1 in range(longueur_rangees):
             for rangee2 in range(nb_rangees):
                 for casier2 in range(longueur_rangees):
-                    commande = [[rangee1, casier1], [rangee2, casier2]]
+                    position1 = [rangee1, casier1]
+                    position1 = [rangee2, casier2]
                     place1 = rangee1 + casier1*nb_rangees
                     place2 = rangee2 + casier2*nb_rangees
-                    temps[place1, place2] = sshape(longueur_rangees, nb_rangees, commande)
+                    temps[place1, place2] = sshape(longueur_rangees, nb_rangees, position1, position2)
+
     return temps
 
 
@@ -171,16 +175,16 @@ if __name__ == "__main__":
     import doctest
     doctest.testmod()
 
-    # Paramètre pour charger les probabilités des commandes
+   #   # Paramètre pour charger les probabilités des commandes
     PATH_COMMANDE = Path("test.txt")
     PROBA = extraction_commande(PATH_COMMANDE)
     NB_REF = len(PROBA)
 
-    # Définition arbitraire de la longueur et du nombre des rangées
+   #   # Définition arbitraire de la longueur et du nombre des rangées
     LONGUEUR_RANGEES = 3
     NB_RANGEES = NB_REF // LONGUEUR_RANGEES
 
-    # Chargement d'un positionnement aléatoire
+   #   # Chargement d'un positionnement aléatoire
     POS_ALEA = alea(LONGUEUR_RANGEES, NB_RANGEES)
 
-    #print(evalue(POS_ALEA, PROBA))
+    print(evalue(POS_ALEA, PROBA))
