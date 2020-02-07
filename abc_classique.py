@@ -224,8 +224,6 @@ def ABC(historique, nb_rangees, longueur_rangees):
     return positionnement
 
 
-
-
 if __name__ == "__main__":
     # -- Doc tests -- #
     import doctest
@@ -233,4 +231,6 @@ if __name__ == "__main__":
 
     historique = np.array([[0.1, 0.4, 0.5, 0.3], [0.4, 0, 1, 0], [0.5, 1, 0.2, 0.7], [0.3, 0, 0.7, 0.3]])
     print(ABC(historique, 2, 2))
+
+    print(classify_rangees(1))
 

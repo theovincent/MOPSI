@@ -89,10 +89,10 @@ def evalue_entrepot(longueur_rangees, nb_rangees):
             i et j dans l'entrepôt (attention, les positions sont codées en 1D):
             [rangee, casier] = [rangee + casier*nb_rangees])
 
-    >>> evalue_entrepot(1, 4)
-    array([[10., 10., 14., 18.], [10., 6., 10., 14.], [14., 10., 10., 14.], [18., 14., 14., 14.]])
-    >>> evalue_entrepot(2, 2)
-    array([[8., 12., 8., 12.], [12., 12., 12., 12.], [8., 12., 8., 12.], [12., 12., 12., 12.]])
+    >>> [list(evalue_entrepot(1, 4)[i]) for i in range(4)]
+    [[8.0, 10.0, 14.0, 18.0], [10.0, 4.0, 10.0, 14.0], [14.0, 10.0, 8.0, 14.0], [18.0, 14.0, 14.0, 12.0]]
+    >>> [list(evalue_entrepot(2, 2)[i]) for i in range(4)]
+    [[6.0, 12.0, 6.0, 12.0], [12.0, 10.0, 12.0, 10.0], [6.0, 12.0, 4.0, 10.0], [12.0, 10.0, 10.0, 8.0]]
     """
     nb_places = longueur_rangees*nb_rangees
     temps = np.zeros((nb_places, nb_places))
@@ -121,7 +121,7 @@ def inverse_positionnement(positionnement):
         entrepot (array de taille nb_ref) : entrepot[refi] = [rangee, casier] qui indique la rangée et le casier où est
         placé refi
 
-    >>> inverse_positionnement(np.array([[3, 1], [0, 2]]))
+    >>> [list(inverse_positionnement(np.array([[3, 1], [0, 2]]))[i]) for i in range(4)]
     [[0.0, 1.0], [1.0, 0.0], [1.0, 1.0], [0.0, 0.0]]
     """
     longueur_rangees = len(positionnement)
@@ -131,8 +131,8 @@ def inverse_positionnement(positionnement):
 
     for rangee in range(nb_rangees):
         for casier in range(longueur_rangees):
-            entrepot[positionnement[casier, rangee], 0] = rangee
-            entrepot[positionnement[casier, rangee], 1] = casier
+            entrepot[int(positionnement[casier, rangee]), 0] = rangee
+            entrepot[int(positionnement[casier, rangee]), 1] = casier
 
     return entrepot
 
@@ -156,7 +156,7 @@ def evalue_position(positionnement, temps_entrepot, proba):
 
     >>> proba = np.array([[0.0, 0.2, 0.4, 0.0], [0.2, 0, 0.1, 0.1], [0.4, 0.1, 0.0, 0.2], [0.0, 0.1, 0.3, 0.0]])
     >>> evalue_position(np.array([[1, 3], [0, 2]]), evalue_entrepot(2, 2), proba)
-    11.2
+    9.600000000000001
     """
     nb_rangees = len(positionnement[0])
     longueur_rangees = len(positionnement)
@@ -190,4 +190,5 @@ if __name__ == "__main__":
     # --- Chargement d'un positionnement aléatoire --- #
     POS_ALEA = alea(LONGUEUR_RANGEES, NB_RANGEES)
 
-    # print(evalue(POS_ALEA, PROBA))
+    TEMPS_ENTREPOT = evalue_entrepot(LONGUEUR_RANGEES, NB_RANGEES)
+    print(evalue_position(POS_ALEA, TEMPS_ENTREPOT, PROBA))
