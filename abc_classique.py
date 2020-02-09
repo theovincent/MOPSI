@@ -3,63 +3,84 @@ import random
 # rappel : les rangées sont numérotées à partir de 0
 
 
-# Classer les références selon leur fréquence d'apparition
-
-
-# historique est une matrice 2D (nb_ref)*(nb_ref) donnant les probas des couples de ref
-# frequence est une matrice 1D (nb_ref) donnant la proba d'une ref
 def from_historique_to_frequence(historique):
-    """ Returns return frequence - 1"""
+    """
+    Calcule la fréquence de commande de chaque référence (= fréquence d'apparition dans les commandes).
+
+    Paramètres:
+        historique (array de taille (nb_ref, nb_ref)) : matrice des probabilités des commandes.
+
+    Return:
+        frequence (array de taille nb_ref) donnant la probabilité de chaque référence.
+
+    >>> from_historique_to_frequence(np.array([[0.3, 0.1, 0.2], [0.1, 0, 0.4], [0.2, 0.4, 0]]))
+    array([0.6, 0.5, 0.6])
+    >>> from_historique_to_frequence(np.array([[0.1, 0.4, 0.5, 0.3], [0.4, 0, 1, 0], [0.5, 1, 0.2, 0.7], [0.3, 0, 0.7, 0.3]]))
+    array([1.3, 1.4, 2.4, 1.3])
+    """
     nb_ref = len(historique[0])
     frequence = np.zeros(nb_ref)
     for ref in range(nb_ref):
         for ref2 in range(nb_ref):
             frequence[ref] += historique[ref, ref2]
-    return frequence - 1
+    return frequence
 
 
-# donne le rang de chaque element de la liste (si la liste était triée)
-def rang_triee(liste):
-    ordre = [i for i in range(len(liste))]
-    # on fait un tri par selection en répercutant toutes les modifs sur la liste ordre
-    n = len(liste)
-    for i in range(n) :
-        k = i
-        for j in range(i+1,n) :
-            if liste[k] > liste[j] :
-                k = j
-        liste[k], liste[i] = liste[i], liste[k]
-        ordre[k], ordre[i] = ordre[i], ordre[k]
-    rang = np.zeros(len(liste))
-    for i in range(len(liste)):
-        rang[ordre[i]] = i
-    return rang
 
-
-# donne le rang de chaque référence (en fonction de leur fréquence)
 def rang_frequence(historique):
+    """
+    Donne le rang de chaque référence (en fonction de leur fréquence)
+
+    Paramètres:
+        historique (array de taille (nb_ref, nb_ref)) : matrice des probabilités des commandes.
+
+    Return:
+        rang_ref (array de taille (nb_ref)) : rang_ref[refi] = rang de refi lorsque les références sont rangées par fréquences croissantes
+
+    >>> rang_frequence(np.array([[0.3, 0.1, 0.2], [0.1, 0, 0.4], [0.2, 0.4, 0]]))
+    array([0., 2., 1.])
+    >>> rang_frequence(np.array([[0.1, 0.4, 0.5, 0.3], [0.4, 0, 1, 0], [0.5, 1, 0.2, 0.7], [0.3, 0, 0.7, 0.3]]))
+    array([2., 1., 0., 3.])
+    """
     frequence = from_historique_to_frequence(historique)
-    rang_ref = rang_triee(frequence)
+    nb_ref = len(historique[0])
+    rang_ref = -1*np.zeros(nb_ref)
+    for k in range(nb_ref):
+        ref_max = np.argmax(frequence)
+        rang_ref[k] = ref_max
+        frequence[ref_max] = -1
     return rang_ref
 
 
-# Regrouper les rangées en 3 groupes
 
-
-# rangees_classe[i] correspond à la liste (pas un array) des rangées dans la classe i
 def classify_rangees(nb_rangees):
+    """
+    Regroupe les rangées en 3 groupes, 1 pour chaque classe.
 
+    Paramètres:
+        nb_rangees (entier) : correspond au nombre de rangées dans l'entrepôt
+
+    Return:
+        rangees_classe (liste de 3 listes) : rangees_classe[0] correspond à la liste des rangees allouées pour la classe A, rangees_classe[1] pour la classe B et rangees_classe[2] pour la classe C
+
+    >>> classify_rangees(4)
+    [[1], [0, 2], [3]]
+    >>> classify_rangees(7)
+    [[2, 3], [1, 4], [0, 5, 6]]
+    >>> classify_rangees(14)
+    [[6], [3, 4, 5, 7, 8, 9], [0, 1, 2, 10, 11, 12, 13]]
+    """
     rangees_classe = [[], [], []]
 
     # cas nb_rangees < 4 : on a moins de 3 classes
     if nb_rangees == 1 :
         # on rajoute la seule rangées dans la classe A
         rangees_classe[0].append(0)
-    if nb_rangees == 2 :
+    elif nb_rangees == 2 :
         # on rajoute la rangée 0 dans la classe A (car en face de l'entrée) et l'autre dans la classe B
         rangees_classe[0].append(0)
         rangees_classe[1].append(1)
-    if nb_rangees == 3 :
+    elif nb_rangees == 3 :
         # les rangées 0 et 1 sont à équidistance de l'entrée, on les mets dans la classe A
         rangees_classe[0].append(0)
         rangees_classe[0].append(1)
@@ -76,7 +97,7 @@ def classify_rangees(nb_rangees):
         if nb_rangees%2 == 0 :
             rangees_classe[0].append(int(nb_rangees/2 - 1))
         # si on a un nombre de rangées impair, alors l'entrée se trouve en face d'une rangée
-        # les 2 allées les plus proches sont les rangées ((nb_rangees+1)/2 - 1) et (nb_rangees+1)/2 - 2)
+        # les 2 allées les plus proches sont celles des rangées ((nb_rangees+1)/2 - 1) et (nb_rangees+1)/2 - 2)
         # ces 2 rangées forment la classe A
         else :
             rangees_classe[0].append(int((nb_rangees+1)/2 - 2))
@@ -102,7 +123,7 @@ def classify_rangees(nb_rangees):
         for rangeeC in range(0, limite_gauche - nb_rangees_classeB):
             rangees_classe[2].append(rangeeC)
         # on fait de même à droite
-        for rangeeB in range(limite_droite + 1, limite_droite + 1 + nb_rangees_classeB):
+        for rangeeB in range(limite_droite + 1, limite_droite + nb_rangees_classeB + 1):
             rangees_classe[1].append(rangeeB)
         for rangeeC in range(limite_droite + 1 + nb_rangees_classeB, nb_rangees):
             rangees_classe[2].append(rangeeC)
@@ -110,12 +131,22 @@ def classify_rangees(nb_rangees):
     return rangees_classe
 
 
-# Positionner les références selon la méthode ABC
 
-
-# crée 3 classes de références, rangées par ordre de grandeur de fréquence d'apparition
 def ABC(historique, nb_rangees, longueur_rangees):
+    """
+    Regroupe les références en 3 groupes, 1 pour chaque classe.
 
+    Paramètres:
+        historique (array de taille (nb_ref, nb_ref)) : matrice des probabilités des commandes.
+
+        nb_rangees (entier) : correspond au nombre de rangées dans l'entrepôt.
+
+        longueur_rangees (entier) : correspond à la longueur d'une rangée.
+
+    Return:
+        positionnement (array de taille (longueur_rangees, nb_rangees): la position
+        des références dans l'entrepôt.
+    """
     nb_ref = nb_rangees*longueur_rangees
     rang_ref = rang_frequence(historique)
 
@@ -134,7 +165,7 @@ def ABC(historique, nb_rangees, longueur_rangees):
     for ref in range(nb_ref):
         if rang_ref[ref] < nb_ref_classeA :
             classeA.append(ref)
-        elif rang_ref[ref] < nb_ref_classeB :
+        elif rang_ref[ref] < nb_ref_classeA + nb_ref_classeB :
             classeB.append(ref)
         else :
             classeC.append(ref)
@@ -145,31 +176,61 @@ def ABC(historique, nb_rangees, longueur_rangees):
     # on peut enfin attribuer une position à chaque référence
     positionnement = -1*np.ones((longueur_rangees, nb_rangees))
     # classe A
-    compteur_ref = 0
-    for rangee in rangees_classe[0]:
-        for casier in range(longueur_rangees):
-            compteur_ref += 1
-            positionnement[casier, rangee] = classeA[compteur_ref]
+    casier = 0
+    compteur_rangee = 0
+    rangee = rangees_classe[0][compteur_rangee]
+    for ref in classeA:
+        if casier < longueur_rangees:
+            positionnement[casier, rangee] = ref
+        else :
+            casier = 0
+            compteur_rangee += 1
+            rangee = rangees_classe[0][compteur_rangee]
+            positionnement[casier, rangee] = ref
+        casier += 1
     # classe B
-    compteur_ref = 0
-    for rangee in rangees_classe[1]:
-        for casier in range(longueur_rangees):
-            compteur_ref += 1
-            positionnement[casier, rangee] = classeB[compteur_ref]
+    if len(classeB) == 0:
+        return positionnement
+    else :
+        casier = 0
+        compteur_rangee = 0
+        rangee = rangees_classe[1][compteur_rangee]
+        for ref in classeB:
+            if casier < longueur_rangees:
+                positionnement[casier, rangee] = ref
+            else :
+                casier = 0
+                compteur_rangee += 1
+                rangee = rangees_classe[1][compteur_rangee]
+                positionnement[casier, rangee] = ref
+            casier += 1
     # classe C
-    compteur_ref = 0
-    for rangee in rangees_classe[2]:
-        for casier in range(longueur_rangees):
-            compteur_ref += 1
-            positionnement[casier, rangee] = classeC[compteur_ref]
+    if len(classeC) == 0:
+        return positionnement
+    else :
+        casier = 0
+        compteur_rangee = 0
+        rangee = rangees_classe[2][compteur_rangee]
+        for ref in classeC:
+            if casier < longueur_rangees:
+                positionnement[casier, rangee] = ref
+            else :
+                casier = 0
+                compteur_rangee += 1
+                rangee = rangees_classe[2][compteur_rangee]
+                positionnement[casier, rangee] = ref
+            casier += 1
 
     return positionnement
 
 
-# Tests
 
 
 if __name__ == "__main__":
-    print(classify_rangees(13))
+    # -- Doc tests -- #
+    import doctest
+    doctest.testmod()
 
+    historique = np.array([[0.1, 0.4, 0.5, 0.3], [0.4, 0, 1, 0], [0.5, 1, 0.2, 0.7], [0.3, 0, 0.7, 0.3]])
+    print(ABC(historique, 2, 2))
 
