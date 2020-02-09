@@ -66,7 +66,7 @@ def from_historique_to_frequence(historique):
     >>> from_historique_to_frequence(np.array([[0.3, 0.1, 0.2], [0.1, 0, 0.4], [0.2, 0.4, 0]]))
     [0.5, 0.5, 0.6]
     """
-    nb_ref = len(historique[0])
+    nb_ref = len(historique)
     frequence = np.zeros(nb_ref)
     for ref in range(nb_ref):
         for ref2 in range(nb_ref):
@@ -93,24 +93,24 @@ def proche_entree(positionnement_en_cours):
     >>> proche_entree(np.array([[-1, 1, 3], [0, -1, -1]]))
     [1, 1]
     """
-    nb_rangees = len(positionnement_en_cours)
-    longueur_rangees = len(positionnement_en_cours[0])
+    nb_rangees = len(positionnement_en_cours[0])
+    longueur_rangees = len(positionnement_en_cours)
     # on définit un ordre allant de la rangée la plus proche de l'entrée
     # à la rangée la plus éloignée
     ordre_rangee = []
     # si le nombre de rangées est impair
     if nb_rangees%2!=0:
-        rangee_milieu_gauche = (nb_rangees - 1)/2
-        rangee_milieu_droite = (nb_rangees + 1)/2
+        rangee_milieu_gauche = (nb_rangees - 1)/2 - 1 # numérotation à partir de zero
+        rangee_milieu_droite = (nb_rangees + 1)/2 - 1 # numérotation à partir de zero
         for k in range(0, int((nb_rangees - 1)/2 + 1)):
             ordre_rangee.append(rangee_milieu_gauche - k)
             ordre_rangee.append(rangee_milieu_droite + k)
         ordre_rangee.append(nb_rangees - 1)
     # si le nombre de rangées est pair
     else :
-        rangee_entree = nb_rangees/2
+        rangee_entree = nb_rangees/2 - 1 # numérotation à partir de zero
         ordre_rangee.append(rangee_entree)
-        for k in range(1, int(nb_rangees/2)):
+        for k in range(1, nb_rangees/2):
             ordre_rangee.append(rangee_entree - k)
             ordre_rangee.append(rangee_entree + k)
         ordre_rangee.append(nb_rangees - 1)
@@ -149,8 +149,8 @@ def proche_place(positionnement_en_cours, place):
     >>> proche_place(np.array([[-1, 1]]), [1,0])
     [0, 0]
     """
-    nb_rangees = len(positionnement_en_cours)
-    longueur_rangees = len(positionnement_en_cours[0])
+    nb_rangees = len(positionnement_en_cours[0])
+    longueur_rangees = len(positionnement_en_cours)
     rangee = place[0]
     casier = place[1]
     while positionnement_en_cours[rangee, casier] >= 0:
