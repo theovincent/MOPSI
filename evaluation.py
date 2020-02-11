@@ -85,9 +85,7 @@ def evalue_entrepot(longueur_rangees, nb_rangees):
         nb_rangees (Entier): le nombre de rangées dans l'entrepôt
 
     Return:
-        temps (Array de taille (nb_ref, nb_ref)): temps[i, j] du temps que le robot met à chercher 2 objets en position
-            i et j dans l'entrepôt (attention, les positions sont codées en 1D):
-            [rangee, casier] = [rangee + casier*nb_rangees])
+        temps (Array de taille (nb_ref, nb_ref)): temps[i, j] du temps que le robot met à chercher 2 objets en positiosn i et j dans l'entrepôt (attention, les positions sont codées en 1D): [rangee, casier] = [rangee + casier*nb_rangees])
 
     >>> evalue_entrepot(1, 4)
     array([[10., 10., 14., 18.], [10., 6., 10., 14.], [14., 10., 10., 14.], [18., 14., 14., 14.]])
