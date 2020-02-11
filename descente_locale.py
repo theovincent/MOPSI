@@ -181,7 +181,46 @@ def cycle_elements(longueur_cycle, positions, sens):
     return applique_cycle_elements(positions, cycle, sens)
 
 
-def descente(positions, nb_permutations, proba, temps_entrepot):
+def verif_minimum_local(positions, proba, temps_entrepot):
+    """
+    Permet de vérifier si positions est un minimum local de la fonction evalue_position.
+    On ne vérifie que les permutations de deux éléments ou deux rangées
+
+    Parametres:
+        positions:
+        proba:
+        temps_entrepot:
+
+    Returns:
+        minimum_local (Booléen): True si positions est un minimum local
+            et False sinon
+    """
+    valeur_opt = evalue_position(positions, temps_entrepot, proba)
+    longueur_rangees = len(positions)
+    nb_rangees = len(positions[0])
+
+    for rangee1 in range(nb_rangees - 1):
+        for rangee2 in range(rangee1 + 1, nb_rangees):
+            essai_rangee = applique_cycle_rangees(positions, [rangee1, rangee2], True)
+            valeur_rangee = evalue_position(essai_rangee, temps_entrepot, proba)
+            if valeur_rangee < valeur_opt:
+                return False
+
+    for profondeur1 in range(longueur_rangees):
+        for profondeur2 in range(profondeur1,longueur_rangees):
+            for rangee1 in range(nb_rangees - 1):
+                for rangee2 in range(rangee1, nb_rangees):
+                    element1 = [profondeur1, rangee1]
+                    element2 = [profondeur2, rangee2]
+                    if element1 != element2:
+                        essai_element = applique_cycle_elements(positions, [element1, element2], True)
+                        valeur_element = evalue_position(essai_element, temps_entrepot, proba)
+                        if valeur_element < valeur_opt:
+                            return False
+    return True
+
+
+def descente(positions, proba, temps_entrepot):
     """
     Permet de trouver le minimum local de la fonction evalue.
     Prend comme point de départ le positionnement obtenu avec
@@ -193,9 +232,11 @@ def descente(positions, nb_permutations, proba, temps_entrepot):
         position (Array de taille (longueur_rangees, nb_rangees): la position
         des références dans l'entrepôt précédemment calculé au moyen d'une méthode.
 
-        nb_permutations (Entier): le nombre de permutation à effectuer.
-
         praba (Array de taille (nb_ref, nb_ref)): matrice des probabilités des commandes.
+
+    Return:
+        pos_opt (Array de taille (longueur_rangees, nb_rangees): la position
+        des références dans l'entrepôt optimale.
     """
     # Initialisation des variables
     pos_opt = positions.copy()
@@ -203,8 +244,9 @@ def descente(positions, nb_permutations, proba, temps_entrepot):
     nb_rangees = len(positions[0])
     longueur_rangee = len(positions)
     nb_ref = nb_rangees * longueur_rangee
+    nb_essaie = 0
 
-    for index_permut in range(nb_permutations):
+    while nb_essaie < nb_ref * nb_ref * 2:
         # On modifie le positionnement en selectionnant au hasard le voisinnage
         voisinnage = randint(0, 3)
         if voisinnage == 0:  # Permutation de rangées
@@ -223,11 +265,18 @@ def descente(positions, nb_permutations, proba, temps_entrepot):
         # On regarde si le nouveau positionnement fait mieux
         valeur = evalue_position(essai_position, temps_entrepot, proba)
         if valeur < minimum:
+            nb_essaie = 0
             minimum = valeur
             pos_opt = essai_position
             print("La nouvelle valeur de notre positionnement est {}".format(minimum))
+        else:
+            nb_essaie += 1
 
-    return pos_opt
+    if verif_minimum_local(pos_opt, proba, temps_entrepot):
+        return pos_opt
+    else:
+        print("Le minimum local n'est pas pos_opt...")
+        return descente(pos_opt, proba, temps_entrepot)
 
 
 if __name__ == "__main__":
@@ -254,7 +303,7 @@ if __name__ == "__main__":
     print(POSITIONS)
 
     # Calcul de la position optimale
-    POSITIONS_OPT = descente(POSITIONS, 100, PROBA, TEMPS_ENTREPOT)
+    POSITIONS_OPT = descente(POSITIONS, PROBA, TEMPS_ENTREPOT)
     print("La solution trouvée est :")
     print(POSITIONS_OPT)
     VAL_NOTRE_ALGO = evalue_position(POSITIONS_OPT, TEMPS_ENTREPOT, PROBA)
