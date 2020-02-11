@@ -181,36 +181,6 @@ def cycle_elements(longueur_cycle, positions, sens):
     return applique_cycle_elements(positions, cycle, sens)
 
 
-def permutation_element(positions):
-    """
-    Effectue une permutation de deux éléments.
-    Les permutations intra rangée ne servent à rien, on les interdits.
-
-    Parametres:
-        position (Array de taille (longueur_rangees, nb_rangees): la position
-        des références dans l'entrepôt.
-
-    >>> pos = [[0, 1]]
-    >>> permutation_element(pos)
-    >>> pos
-    [[1, 0]]
-    """
-    longeur_rangees = len(positions)
-    nb_rangees = len(positions[0])
-
-    # On prend 2 indices d'éléments différents
-    element1 = [randint(0, longeur_rangees - 1), randint(0, nb_rangees - 1)]
-    element2 = [randint(0, longeur_rangees - 1), randint(0, nb_rangees - 1)]
-    while element2[1] == element1[1] or element1 == element2:
-        element1[0] = randint(0, longeur_rangees - 1)
-        element2[1] = randint(0, nb_rangees - 1)
-
-    # On les échange
-    memoire = positions[element1[0]][element1[1]]
-    positions[element1[0]][element1[1]] = positions[element2[0]][element2[1]]
-    positions[element2[0]][element2[1]] = memoire
-
-
 def descente(positions, nb_permutations, proba, temps_entrepot):
     """
     Permet de trouver le minimum local de la fonction evalue.
