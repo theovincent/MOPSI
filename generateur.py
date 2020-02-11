@@ -14,18 +14,20 @@ class DimensionError(Exception):
         return "Le nombre de référence doit être un multiple de 3 différent de 3"
 
 
-def extraction_commande(path):
+def extraction_commande(nom_fichier):
     """
     Permet d'obtenir une matrice des commandes
     à partir d'un fichier texte.
 
     Parametres:
-        path (Chaîne de caractères) : le chemin où se situe les commandes à extraire
+        nom_fichier (Chaîne de caractères) : le chemin où se situe les commandes à extraire
 
     Return:
         commande (Array de taille (nb_ref, nb_ref)): matrice des probabilités des commandes.
     """
-    with open(path, "r") as fichier:
+    with open(nom_fichier + ".txt", "r") as fichier:
+        entrepot = fichier.readline()
+        (longueur_rangee, nb_rangees) = entrepot.split(" ")
         lines = fichier.readlines()
         nb_references = len(lines)
         commande = np.zeros((nb_references, nb_references))
@@ -35,7 +37,7 @@ def extraction_commande(path):
             for index_ref in range(nb_references):
                 commande[index_line, index_ref] = line[index_ref]
 
-    return commande
+    return commande, longueur_rangee, nb_rangees
 
 
 def proba_to_jaccard(proba):
@@ -219,6 +221,7 @@ def minimum_matrice(matrice):
 def bruit_proba(proba):
     """
     Ajoute du bruit à une matrice. Fonction en place
+
     Parametres:
         proba (Array de deux dimensions): matrice dont on souhaite appliquer du bruit
 
@@ -243,7 +246,7 @@ def trie_proba(proba):
     Au dessous d'un certain seuil, on annule la probabilité.
     Un petit nombre de probabilité est multiplié par 100
 
-    Args:
+    Paramètres:
         proba (Array de deux dimensions): matrice des probabilités
 
     Returns:
@@ -256,7 +259,7 @@ def trie_proba(proba):
     for refi in range(nb_ref):
         for refj in range(refi + 1, nb_ref):
             # On annule la probabilité une fois sur 30
-            if randint(0, nb_ref * nb_ref / 2) == 0:
+            if randint(0, nb_ref * nb_ref // 2) == 0:
                 proba[refi, refj] *= 100
                 proba[refj, refi] *= 100
             if proba[refi, refj] < seuil and randint(0, nb_ref) != 0:
@@ -286,18 +289,25 @@ def norme_matrice(matrice):
     return norme
 
 
-def store_matrice(matrice, file_name):
+def store_matrice(matrice, longueur_rangee, nb_rangees, file_name):
     """
     Permet d'enregistrer la matrice en format texte.
 
     Parametres:
         matrice (Array de taille (nb_ref, nb_ref)): matrice des probabilités des commandes.
 
+        longueur_rangee (Entier positif): longueur des rangées dans l'entrepôt.
+
+        nb_rangees (Entier positif): nombre de rangées dans l'entrepôt.
+
         file_name (Chaîne de caractères): chemin du nouveau fichier.
     """
     nb_reference = len(matrice)
 
     with open(file_name, 'w') as file:
+        string_row = "{} {}".format(longueur_rangee, nb_rangees)
+        string_row += "\n"
+        file.write(string_row)
         for ref1 in range(nb_reference):
             string_row = ""
             for ref2 in range(nb_reference):
@@ -307,22 +317,25 @@ def store_matrice(matrice, file_name):
             file.write(string_row)
 
 
-def generation_commande(nb_ref, nom_instance):
+def generation_commande(longueur_rangee, nb_rangees, nom_instance):
     """
     Génère un fichier texte donnant les probabilités.
     Renvoie la matrice des probabilités.
 
     Parametres:
-        nb_ref (Entier positif) : nombre de référence dans l'entrepôt.
+        longueur_rangee (Entier positif): longueur des rangées dans l'entrepôt.
+
+        nb_rangees (Entier positif): nombre de rangées dans l'entrepôt.
 
         nom_instance (Chaîne de caractères): chemin du nouveau fichier.
 
     Return:
         commande (Array de taille (nb_ref, nb_ref)): matrice des probabilités des commandes.
     """
+    nb_ref = longueur_rangee * nb_rangees
     try:
         probabilite = matrice_proba(nb_ref)
-        store_matrice(probabilite, nom_instance + ".txt")
+        store_matrice(probabilite, longueur_rangee, nb_rangees, nom_instance + ".txt")
         return probabilite
 
     except DimensionError:
@@ -335,10 +348,12 @@ if __name__ == "__main__":
     doctest.testmod()
 
     # -- Paramètres -- #
-    NB_REF = 30
-    PROBA = "test"
+    NB_REF = 1
+    NB_RANGEES = 2
+    LONGUEUR_RANGEE = NB_REF // NB_RANGEES
+    NOM_INSTANCE = "entrepot{}x{}_{}".format(LONGUEUR_RANGEE, NB_RANGEES, NB_REF)
 
-    generation_commande(NB_REF, PROBA)
-    PROBA = extraction_commande("test.txt")
+    generation_commande(LONGUEUR_RANGEE, NB_RANGEES, NOM_INSTANCE)
+    (PROBA, LONGUEUR_RANGEE, NB_RANGEES) = extraction_commande(NOM_INSTANCE)
     print(PROBA)
     print(-minimum_matrice(-PROBA))

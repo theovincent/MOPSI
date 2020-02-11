@@ -3,7 +3,6 @@ Ce module permet de calculer un emplacement performant de l'entrepôt.
 Nous utilisons ici une descente locale.
 """
 from random import randint
-from pathlib import Path
 from evaluation import evalue_position, evalue_entrepot
 from alea import alea
 from generateur import extraction_commande
@@ -207,8 +206,8 @@ def verif_minimum_local(positions, proba, temps_entrepot):
                 return False
 
     for profondeur1 in range(longueur_rangees):
-        for profondeur2 in range(profondeur1,longueur_rangees):
-            for rangee1 in range(nb_rangees - 1):
+        for profondeur2 in range(profondeur1, longueur_rangees):
+            for rangee1 in range(nb_rangees):
                 for rangee2 in range(rangee1, nb_rangees):
                     element1 = [profondeur1, rangee1]
                     element2 = [profondeur2, rangee2]
@@ -248,17 +247,31 @@ def descente(positions, proba, temps_entrepot):
 
     while nb_essaie < nb_ref * nb_ref * 2:
         # On modifie le positionnement en selectionnant au hasard le voisinnage
-        voisinnage = randint(0, 3)
+        if nb_rangees > 3:  # On peut effectuer des cycles de rangées
+            if nb_ref > 3:  # On peut effectuer des cycles d'éléments
+                voisinnage = randint(0, 3)
+            else:
+                voisinnage = randint(0, 2)
+        else:  # On ne peut pas effectuer des cycles de rangées
+            if nb_ref > 3:  # On peut effectuer des cycles d'éléments
+                voisinnage = randint(0, 2)
+                if voisinnage == 2:
+                    voisinnage = 3
+            else:
+                voisinnage = randint(0, 1)
+        if nb_rangees == 1:
+            voisinnage = 1
+
         if voisinnage == 0:  # Permutation de rangées
             essai_position = cycle_rangees(2, positions, True)
         elif voisinnage == 1:  # Permutation d'éléments
             essai_position = cycle_elements(2, positions, True)
         elif voisinnage == 2:  # Cycle de rangées
-            longueur_cycle = randint(3, nb_rangees - 1)
+            longueur_cycle = randint(3, nb_rangees)
             sens = randint(0, 1)
             essai_position = cycle_rangees(longueur_cycle, positions, sens)
         else:  # Cycle d'éléments
-            longueur_cycle = randint(3, nb_ref - 1)
+            longueur_cycle = randint(3, nb_ref)
             sens = randint(0, 1)
             essai_position = cycle_elements(longueur_cycle, positions, sens)
 
@@ -285,13 +298,13 @@ if __name__ == "__main__":
     doctest.testmod()
 
     # Paramètre pour charger les probabilités des commandes
-    PATH_COMMANDE = Path("test.txt")
-    PROBA = extraction_commande(PATH_COMMANDE)
+    PATH_COMMANDE = "test"
+    PROBA = extraction_commande(PATH_COMMANDE)[0]
     NB_REF = len(PROBA)
 
     # Définition arbitraire de la longueur et du nombre des rangées
-    LONGUEUR_RANGEES = 3
-    NB_RANGEES = NB_REF // LONGUEUR_RANGEES
+    NB_RANGEES = 1
+    LONGUEUR_RANGEES = NB_REF // NB_RANGEES
 
     # Calcul du S-Shape
     TEMPS_ENTREPOT = evalue_entrepot(LONGUEUR_RANGEES, NB_RANGEES)
