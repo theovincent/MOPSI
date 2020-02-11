@@ -7,113 +7,178 @@ from pathlib import Path
 from evaluation import evalue_position, evalue_entrepot
 from alea import alea
 from generateur import extraction_commande
+import numpy as np
 
 
-def permutation_cyclique_trois(positions, sens):
+def applique_cycle_rangees(positions, cycle, sens):
     """
-        Effectue une permatution cyclique de longueur trois sur les rangées.
+    Applique le cycle aux rangées de "positions"
+    Args:
+        positions (Array de taille (longueur_rangees, nb_rangees): la position
 
-        Parametres:
-            position (Array de taille (longueur_rangees, nb_rangees): la position
+        cycle (Liste d'entiers) : liste d'indice des rangées qui composent le cycle
+        
+        sens (Booléreen): donne le sens du cycle
+
+    Returns:
+        positions_essai (Array de taille (longueur_rangees, nb_rangees): la position
             des références dans l'entrepôt.
-
-            sens (Booléreen): donne le sens du cycle
-
-        >>> pos = [[2, 3, 4], [1, 0, 5]]
-        >>> permutation_cyclique_trois(pos, True)
-        >>> pos
-        [[3, 4, 2], [0, 5, 1]]
-        >>> pos = [[2, 3, 4], [1, 0, 5]]
-        >>> permutation_cyclique_trois(pos, False)
-        >>> pos
-        [[4, 2, 3], [5, 1, 0]]
-        """
+    >>> position = np.array([[0, 1, 4, 6], [3, 2, 5, 7]])
+    >>> permutation = [0, 1, 3]
+    >>> applique_cycle_rangees(position, permutation, True)
+    array([[1, 6, 4, 0],
+           [2, 7, 5, 3]])
+    >>> applique_cycle_rangees(position, permutation, False)
+    array([[6, 0, 4, 1],
+           [7, 3, 5, 2]])
+    """
     longeur_rangees = len(positions)
-    nb_rangees = len(positions[0])
-    rangee1 = randint(1, nb_rangees - 2)
-    rangee2 = randint(0, rangee1)
-    rangee3 = randint(rangee1)
-    permutation = [rangee1, rangee2, rangee3]
-
-    # On effectue le cyclique
+    cycle_longueur = len(cycle)
+    positions_essai = positions.copy()
+    
     if sens:
         for profondeur in range(longeur_rangees):
-            memoire = positions[profondeur][0]
-            for index_rangee in range(nb_rangees - 1):
-                positions[profondeur][index_rangee] = positions[profondeur][index_rangee + 1]
-            positions[profondeur][-1] = memoire
+            memoire = positions_essai[profondeur, cycle[0]]
+            for index_rangee in range(cycle_longueur - 1):
+                positions_essai[profondeur, cycle[index_rangee]] = positions_essai[profondeur, cycle[index_rangee + 1]]
+            positions_essai[profondeur, cycle[-1]] = memoire
     else:
         for profondeur in range(longeur_rangees):
-            memoire = positions[profondeur][-1]
-            for index_rangee in range(nb_rangees - 1, 0, -1):
-                positions[profondeur][index_rangee] = positions[profondeur][index_rangee - 1]
-            positions[profondeur][0] = memoire
+            memoire = positions_essai[profondeur, cycle[-1]]
+            for index_rangee in range(cycle_longueur - 1, 0, -1):
+                positions_essai[profondeur, cycle[index_rangee]] = positions_essai[profondeur, cycle[index_rangee - 1]]
+            positions_essai[profondeur, 0] = memoire
 
-
-def permutation_cyclique(positions, sens):
+    return positions_essai
+    
+    
+def cycle_rangees(longueur_cycle, positions, sens):
     """
-    Effectue une permatution cyclique des rangées.
+    Calcul et effectue un cycle de longueur donnée sur les rangées de la matrice "positions"
+    
+    Paramètres:
+        longueur_cycle (Entier positif): longueur du cycle appliqué aux positions
 
-    Parametres:
-        position (Array de taille (longueur_rangees, nb_rangees): la position
-        des références dans l'entrepôt.
+        positions (Array de taille (longueur_rangees, nb_rangees): les positions
+            des références dans l'entrepôt.
 
         sens (Booléreen): donne le sens du cycle
 
-    >>> pos = [[2, 3, 4], [1, 0, 5]]
-    >>> permutation_cyclique(pos, True)
-    >>> pos
-    [[3, 4, 2], [0, 5, 1]]
-    >>> pos = [[2, 3, 4], [1, 0, 5]]
-    >>> permutation_cyclique(pos, False)
-    >>> pos
-    [[4, 2, 3], [5, 1, 0]]
+    Returns:
+        positions (Array de taille (longueur_rangees, nb_rangees): les positions
+            permutées des références dans l'entrepôt.
+
+
+    >>> position = np.array([[0, 1], [3, 2]])
+    >>> cycle_rangees(2, position, True)
+    array([[1, 0],
+           [2, 3]])
     """
-    longeur_rangees = len(positions)
     nb_rangees = len(positions[0])
 
-    # On effectue le cyclique
-    if sens:
-        for profondeur in range(longeur_rangees):
-            memoire = positions[profondeur][0]
-            for index_rangee in range(nb_rangees - 1):
-                positions[profondeur][index_rangee] = positions[profondeur][index_rangee + 1]
-            positions[profondeur][-1] = memoire
-    else:
-        for profondeur in range(longeur_rangees):
-            memoire = positions[profondeur][-1]
-            for index_rangee in range(nb_rangees - 1, 0, -1):
-                positions[profondeur][index_rangee] = positions[profondeur][index_rangee - 1]
-            positions[profondeur][0] = memoire
-
-
-def permutation_rangee(positions):
-    """
-    Effectue une permutation de deux rangées aléatoirement choisit.
-
-    Parametres:
-        position (Array de taille (longueur_rangees, nb_rangees): la position
-        des références dans l'entrepôt.
-
-    >>> pos = [[2, 3], [1, 0]]
-    >>> permutation_rangee(pos)
-    >>> pos
-    [[3, 2], [0, 1]]
-    """
-    longeur_rangees = len(positions)
-    nb_rangees = len(positions[0])
-
-    # On prend 2 indices de rangées differentes
+    # --- Calcul de la permutation --- #
     rangee1 = randint(0, nb_rangees - 1)
-    rangee2 = randint(0, nb_rangees - 1)
-    while rangee2 == rangee1:
-        rangee2 = randint(0, nb_rangees - 1)
+    cycle = [rangee1] * longueur_cycle
+    nb_rangees_cycle = 1
+    while nb_rangees_cycle < longueur_cycle:
+        # On choisit la rangée à rajouter
+        rangee = randint(0, nb_rangees - 1)
+        while rangee in cycle:
+            rangee = randint(0, nb_rangees - 1)
+        cycle[nb_rangees_cycle] = rangee
+        nb_rangees_cycle += 1
 
-    # On les échange
-    for profondeur in range(longeur_rangees):
-        memoire = positions[profondeur][rangee1]
-        positions[profondeur][rangee1] = positions[profondeur][rangee2]
-        positions[profondeur][rangee2] = memoire
+    # --- On applique le cycle --- #
+    return applique_cycle_rangees(positions, cycle, sens)
+
+
+def applique_cycle_elements(positions, cycle, sens):
+    """
+    Applique le cycle aux éléments de "positions"
+    Args:
+        positions (Array de taille (longueur_rangees, nb_rangees): la position
+
+        cycle (Liste de liste d'entiers) : liste d'indices des éléments qui composent le cycle
+
+        sens (Booléreen): donne le sens du cycle
+
+    Returns:
+        positions_essai (Array de taille (longueur_rangees, nb_rangees): la position
+            des références dans l'entrepôt.
+    >>> position = np.array([[0, 1, 4, 6], [3, 2, 5, 7]])
+    >>> permutation = [[0, 1], [1, 2], [1, 3]]
+    >>> applique_cycle_elements(position, permutation, True)
+    array([[0, 5, 4, 6],
+           [3, 2, 7, 1]])
+    >>> applique_cycle_elements(position, permutation, False)
+    array([[0, 7, 4, 6],
+           [3, 2, 1, 5]])
+    """
+    cycle_longueur = len(cycle)
+    positions_essai = positions.copy()
+
+    if sens:
+        memoire = positions_essai[cycle[0][0], cycle[0][1]]
+        for index_element in range(cycle_longueur - 1):
+            element1 = cycle[index_element]
+            element2 = cycle[index_element + 1]
+            positions_essai[element1[0], element1[1]] = positions_essai[element2[0], element2[1]]
+        positions_essai[cycle[-1][0], cycle[-1][1]] = memoire
+    else:
+        memoire = positions_essai[cycle[-1][0], cycle[-1][1]]
+        for index_element in range(cycle_longueur - 1, 0, -1):
+            element1 = cycle[index_element]
+            element2 = cycle[index_element - 1]
+            positions_essai[element1[0], element1[1]] = positions_essai[element2[0], element2[1]]
+        positions_essai[cycle[0][0], cycle[0][1]] = memoire
+
+    return positions_essai
+
+
+def cycle_elements(longueur_cycle, positions, sens):
+    """
+    Calcul et effectue un cycle de longueur donnée sur les éléments de la matrice "positions"
+
+    Paramètres:
+        longueur_cycle (Entier positif): longueur du cycle appliqué aux positions
+
+        positions (Array de taille (longueur_rangees, nb_rangees): les positions
+            des références dans l'entrepôt.
+
+        sens (Booléreen): donne le sens du cycle
+
+    Returns:
+        positions (Array de taille (longueur_rangees, nb_rangees): les positions
+            permutées des références dans l'entrepôt.
+
+
+    >>> position = np.array([[0], [1]])
+    >>> cycle_elements(2, position, True)
+    array([[1],
+           [0]])
+    """
+    longueur_rangees = len(positions)
+    nb_rangees = len(positions[0])
+
+    # --- Calcul de la permutation --- #
+    rangee1 = randint(0, nb_rangees - 1)
+    element1 = randint(0, longueur_rangees - 1)
+    cycle = [[element1, rangee1]]
+    nb_rangees_cycle = 1
+    while nb_rangees_cycle < longueur_cycle:
+        # On choisit l'élément à rajouter
+        element = randint(0, longueur_rangees - 1)
+        rangee = randint(0, nb_rangees - 1)
+        couple = [element, rangee]
+        while couple in cycle:
+            element = randint(0, longueur_rangees - 1)
+            rangee = randint(0, nb_rangees - 1)
+            couple = [element, rangee]
+        cycle.append(couple)
+        nb_rangees_cycle += 1
+
+    # --- On applique le cycle --- #
+    return applique_cycle_elements(positions, cycle, sens)
 
 
 def permutation_element(positions):
@@ -165,23 +230,31 @@ def descente(positions, nb_permutations, proba, temps_entrepot):
     # Initialisation des variables
     pos_opt = positions.copy()
     minimum = evalue_position(positions, temps_entrepot, proba)
+    nb_rangees = len(positions[0])
+    longueur_rangee = len(positions)
+    nb_ref = nb_rangees * longueur_rangee
 
     for index_permut in range(nb_permutations):
         # On modifie le positionnement en selectionnant au hasard le voisinnage
-        voisinnage = randint(0, 2)
-        if voisinnage == 0:
-            permutation_rangee(positions)
-        elif voisinnage == 1:
-            permutation_element(positions)
-        else:
+        voisinnage = randint(0, 3)
+        if voisinnage == 0:  # Permutation de rangées
+            essai_position = cycle_rangees(2, positions, True)
+        elif voisinnage == 1:  # Permutation d'éléments
+            essai_position = cycle_elements(2, positions, True)
+        elif voisinnage == 2:  # Cycle de rangées
+            longueur_cycle = randint(3, nb_rangees - 1)
             sens = randint(0, 1)
-            permutation_cyclique(positions, sens)
+            essai_position = cycle_rangees(longueur_cycle, positions, sens)
+        else:  # Cycle d'éléments
+            longueur_cycle = randint(3, nb_ref - 1)
+            sens = randint(0, 1)
+            essai_position = cycle_elements(longueur_cycle, positions, sens)
 
         # On regarde si le nouveau positionnement fait mieux
-        valeur = evalue_position(positions, temps_entrepot, proba)
+        valeur = evalue_position(essai_position, temps_entrepot, proba)
         if valeur < minimum:
             minimum = valeur
-            pos_opt = positions.copy()
+            pos_opt = essai_position
             print("La nouvelle valeur de notre positionnement est {}".format(minimum))
 
     return pos_opt
@@ -218,3 +291,4 @@ if __name__ == "__main__":
 
     # Résultats
     print("Nous sommes passé de {} à {}".format(VAL_ALEA, VAL_NOTRE_ALGO))
+
