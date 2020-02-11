@@ -1,5 +1,5 @@
 import numpy as np
-# rappel : les rangées sont numérotées à partir de 0
+# besoin du sshape calculé sur l'entrepôt
 
 
 def indice_jacquard(historique):
@@ -12,8 +12,8 @@ def indice_jacquard(historique):
     Return:
         J (array de taille (nb_ref, nb_ref)): contenant les indices de Jacquard de chaque couple de références
 
-    >>> indice_jacquard(np.array([[0.3, 0.1, 0.2], [0.1, 0, 0.4], [0.2, 0.4, 0]]))
-    [[1/3, 0.1, 0.2], [0.1, 0, 4/7], [0.2, 4/7, 0]]
+    >>> indice_jacquard(np.array([[0, 2, 4], [2, 0, 3], [4, 3, 1]]))
+    np.array([[0., 0.22222222, 0.4], [0.22222222, 0., 0.3], [0.4, 0.3, 0.06666667]])
     """
     nb_ref = len(historique)
     J = np.zeros((nb_ref, nb_ref))
@@ -21,11 +21,12 @@ def indice_jacquard(historique):
         for j in range(i, nb_ref):
             denominateur = 0
             for k in range(nb_ref):
-                denominateur += historique[i, k] + historique[k, i]
+                denominateur += historique[i, k] + historique[j, k]
             denominateur -= historique[i, j]
             J[i, j] = historique[i, j]/denominateur
             J[j, i] = J[i, j]
     return J
+
 
 
 def ens_correlation(jacquard, seuil):
@@ -36,21 +37,25 @@ def ens_correlation(jacquard, seuil):
     Paramètres:
         jacquard (array de taille (nb_ref, nb_ref)) : matrice des indices de jacquard
 
-        seuil (float) : seuil de corrélation "suffisante".
+        seuil (float) : seuil de corrélation "suffisante"
 
     Return:
-        E (array de taille nb_ref) : E[refi] est l'ensemble de corrélation de refi
+        E (liste de listes de taille nb_ref) : E[refi] est l'ensemble de corrélation de refi
 
-    >>> ens_correlation(np.array([[0.3, 0.1, 0.2], [0.1, 0, 0.4], [0.2, 0.4, 0]]), 0.19)
+    >>> ens_correlation(np.array([[0., 0.22222222, 0.4], [0.22222222, 0., 0.3], [0.4, 0.3, 0.06666667]]), 0.25)
+    [[2], [2], [0, 1]]
+    >>> ens_correlation(np.array([[0., 0.22222222, 0.4], [0.22222222, 0., 0.3], [0.4, 0.3, 0.06666667]]), 0.35)
     [[2], [], [0]]
     """
     nb_ref = len(jacquard)
-    E = np.zeros(nb_ref)
+    E = [[] for k in range(nb_ref)]
     for i in range(nb_ref):
-        for j in range(nb_ref):
-            if j!=i and jacquard[i, j]>=seuil :
+        for j in range(i, nb_ref):
+            if j!=i and jacquard[i, j] >= seuil :
                 E[i] += [j]
+                E[j] += [i]
     return E
+
 
 
 def from_historique_to_frequence(historique):
@@ -64,72 +69,51 @@ def from_historique_to_frequence(historique):
         frequence (array de taille nb_ref) donnant la probabilité de chaque référence.
 
     >>> from_historique_to_frequence(np.array([[0.3, 0.1, 0.2], [0.1, 0, 0.4], [0.2, 0.4, 0]]))
-    [0.5, 0.5, 0.6]
+    np.array([0.6, 0.5, 0.6])
+    >>> from_historique_to_frequence(np.array([[0.1, 0.4, 0.5, 0.3], [0.4, 0, 1, 0], [0.5, 1, 0.2, 0.7], [0.3, 0, 0.7, 0.3]]))
+    np.array([1.3, 1.4, 2.4, 1.3])
     """
-    nb_ref = len(historique)
+    nb_ref = len(historique[0])
     frequence = np.zeros(nb_ref)
     for ref in range(nb_ref):
-        for ref2 in range(nb_ref):
-            frequence[ref] += historique[ref, ref2]
+        frequence[ref] = sum(historique[ref])
     return frequence
 
 
-def proche_entree(positionnement_en_cours):
+
+def proche_entree(positionnement_en_cours, temps_entrepot):
     """
     Trouve la place disponible la plus proche de l'entrée de l'entrepôt.
 
     Paramètres:
         positionnement_en_cours (array de taille (longueur_rangees, nb_rangees)).
 
+        temps_entrepot (array de taille (nb_ref, nb_ref)): temps[i, j] du temps que le robot met à chercher 2 objets en positions i et j dans l'entrepôt (attention, les positions sont codées en 1D): [rangee, casier] = [rangee + casier*nb_rangees])
+
     Return:
         position (liste [r, c]) : donne les coordonnees de la rangee r et de le casier c de la place disponible la plus proche de l'entrée
-
-    >>> proche_entree(np.array([[-1, 1], [0, -1]]))
-    [0, 0]
-    >>> proche_entree(np.array([[-1, 1]]))
-    [0, 0]
-    >>> proche_entree(np.array([[0, -1]]))
-    [1, 0]
-    >>> proche_entree(np.array([[-1, 1, 3], [0, -1, -1]]))
-    [1, 1]
     """
     nb_rangees = len(positionnement_en_cours[0])
     longueur_rangees = len(positionnement_en_cours)
-    # on définit un ordre allant de la rangée la plus proche de l'entrée
-    # à la rangée la plus éloignée
-    ordre_rangee = []
-    # si le nombre de rangées est impair
-    if nb_rangees%2!=0:
-        rangee_milieu_gauche = (nb_rangees - 1)/2 - 1 # numérotation à partir de zero
-        rangee_milieu_droite = (nb_rangees + 1)/2 - 1 # numérotation à partir de zero
-        for k in range(0, int((nb_rangees - 1)/2 + 1)):
-            ordre_rangee.append(rangee_milieu_gauche - k)
-            ordre_rangee.append(rangee_milieu_droite + k)
-        ordre_rangee.append(nb_rangees - 1)
-    # si le nombre de rangées est pair
-    else :
-        rangee_entree = nb_rangees/2 - 1 # numérotation à partir de zero
-        ordre_rangee.append(rangee_entree)
-        for k in range(1, nb_rangees/2):
-            ordre_rangee.append(rangee_entree - k)
-            ordre_rangee.append(rangee_entree + k)
-        ordre_rangee.append(nb_rangees - 1)
 
-    index_rangee = 0 # nombre de rangees déjà visitées
-    rangee = ordre_rangee[index_rangee]
-    casier = longueur_rangees - 1
-    while positionnement_en_cours[rangee, casier]>=0: # tant que la place est occupée
-        if casier>0: # si est pas encore au bout de la rangée
-            casier -= 1
-        else: # si on est arrivé au bout de la rangée
-            index_rangee += 1
-            rangee = ordre_rangee[index_rangee]
-            casier = longueur_rangees -1
+    place_min = [-1, -1] # place absurde
+    distance_min = 10*(nb_rangees + longueur_rangees) # borne sup des distances
 
-    return [rangee, casier]
+    for rangee in range(nb_rangees):
+        for casier in range(longueur_rangees):
+            # si la place est libre
+            if positionnement_en_cours[rangee, casier] < 0 :
+                place = rangee + casier * nb_rangees
+                # si la place est plus proche de l'entrée
+                if temps_entrepot[place, place] < distance_min :
+                    place_min = [rangee, casier]
+                    distance_min = temps_entrepot[place, place]
+
+    return place_min
 
 
-def proche_place(positionnement_en_cours, place):
+
+def proche_place(positionnement_en_cours, place, temps_entrepot):
     """
     Trouve la place disponible la plus proche de la place en question.
     Attention dans cette fonction on considère que les casier plus proche de l'entrée dans la même range sont déjà pris
@@ -138,6 +122,8 @@ def proche_place(positionnement_en_cours, place):
         positionnement_en_cours (array de taille (longueur_rangees, nb_rangees)).
 
         place (liste [r, c]) : donne les coordonnees de la rangee r et de le casier c de la place à côté de laquelle on veut se placer
+
+        temps_entrepot (array de taille (nb_ref, nb_ref)): temps[i, j] du temps que le robot met à chercher 2 objets en positions i et j dans l'entrepôt (attention, les positions sont codées en 1D): [rangee, casier] = [rangee + casier*nb_rangees])
 
     Return:
         position (liste [r, c]) : donne les coordonnees de la rangee r et de le casier c de la place disponible la plus proche de la place donnée
@@ -151,31 +137,29 @@ def proche_place(positionnement_en_cours, place):
     """
     nb_rangees = len(positionnement_en_cours[0])
     longueur_rangees = len(positionnement_en_cours)
-    rangee = place[0]
-    casier = place[1]
-    while positionnement_en_cours[rangee, casier] >= 0:
-        # si on est pas au bout de la rangée
-        if place[1]>0:
-            casier -= 1
-        # si on est au bout de la rangée, il faut changer de rangée
-        else:
-            # si on est dans la rangée la plus à gauche, on repart du milieu droite
-            if rangee == 0:
-                rangee = int(nb_rangees/2) + 1
-            # si on est dans la rangée la plus à droite, on repart du milieu gauche
-            elif rangee == nb_rangees - 1:
-                rangee = int(nb_rangees/2)
-            # si on est dans la partie gauche, on se déplace dans la rangée à gauche
-            elif rangee <= nb_rangees/2:
-                rangee = rangee - 1
-            # si on est dans la partie droite, on se déplace dans la rangée à droite
-            else:
-                rangee = rangee + 1
-            casier = longueur_rangees - 1
-    return [rangee, casier]
+
+    rangee_ref = place[0]
+    casier_ref = place[1]
+
+    place_min = [-1, -1] # place absurde
+    distance_min = 100*(nb_rangees + longueur_rangees) # borne sup des distances
+
+    for rangee in range(nb_rangees):
+        for casier in range(longueur_rangees):
+            # si la place est libre
+            if positionnement_en_cours[rangee, casier] < 0 :
+                place_ref = rangee_ref + casier_ref * nb_rangees
+                place = rangee + casier * nb_rangees
+                # si la place est plus proche de la place en argument
+                if temps_entrepot[place_ref, place] < distance_min :
+                    place_min = [rangee, casier]
+                    distance_min = temps_entrepot[place_ref, place]
+
+    return place_min
 
 
-def jacquard(historique, nb_rangees, longueur_rangees, seuil):
+
+def jacquard(historique, nb_rangees, longueur_rangees, temps_entrepot, seuil):
     """
     Crée un positionnement des références sous le critère de Jacquard.
 
@@ -186,7 +170,9 @@ def jacquard(historique, nb_rangees, longueur_rangees, seuil):
 
         longueur_rangees (Entier): la longueur des rangées dans l'entrepôt.
 
-        seuil (float) : seuil de corrélation "suffisante"
+        temps_entrepot (array de taille (nb_ref, nb_ref)): temps[i, j] du temps que le robot met à chercher 2 objets en positions i et j dans l'entrepôt (attention, les positions sont codées en 1D): [rangee, casier] = [rangee + casier*nb_rangees]).
+
+        seuil (float) : seuil de corrélation "suffisante".
 
     Return:
         positionnement (array de taille (longueur_rangees, nb_rangees)) : la position des références dans l'entrepôt.
@@ -200,7 +186,7 @@ def jacquard(historique, nb_rangees, longueur_rangees, seuil):
     J = indice_jacquard(historique)
     E = ens_correlation(J, seuil)
     # on initialise le positionnement à -1 (-1 signifie donc que la place est libre)
-    positionnement = np.zeros((nb_rangees, longueur_rangees))*(-1)
+    positionnement = -1*np.zeros((nb_rangees, longueur_rangees))
 
     nb_restant = nb_ref
     while nb_restant>0:
@@ -224,5 +210,8 @@ def jacquard(historique, nb_rangees, longueur_rangees, seuil):
 
 if __name__ == "__main__":
     # -- Doc tests -- #
-    import doctest
-    doctest.testmod()
+    #import doctest
+    #doctest.testmod()
+
+    print(proche_entree(np.array([[-1, 1], [0, -1]])))
+
