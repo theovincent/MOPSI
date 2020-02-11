@@ -11,8 +11,8 @@ from generateur import extraction_commande
 
 
 # --- Paramètres --- #
-LONGUEUR_RANGEES = 6
-NB_RANGEES = 10
+LONGUEUR_RANGEES = 3
+NB_RANGEES = 20
 # Attention : le nombre de réference doit être un multiple de trois
 NB_REF = LONGUEUR_RANGEES * NB_RANGEES
 NOM_INSTANCE_THEO = "test.txt"

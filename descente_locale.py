@@ -9,6 +9,47 @@ from alea import alea
 from generateur import extraction_commande
 
 
+def permutation_cyclique_trois(positions, sens):
+    """
+        Effectue une permatution cyclique de longueur trois sur les rangées.
+
+        Parametres:
+            position (Array de taille (longueur_rangees, nb_rangees): la position
+            des références dans l'entrepôt.
+
+            sens (Booléreen): donne le sens du cycle
+
+        >>> pos = [[2, 3, 4], [1, 0, 5]]
+        >>> permutation_cyclique_trois(pos, True)
+        >>> pos
+        [[3, 4, 2], [0, 5, 1]]
+        >>> pos = [[2, 3, 4], [1, 0, 5]]
+        >>> permutation_cyclique_trois(pos, False)
+        >>> pos
+        [[4, 2, 3], [5, 1, 0]]
+        """
+    longeur_rangees = len(positions)
+    nb_rangees = len(positions[0])
+    rangee1 = randint(1, nb_rangees - 2)
+    rangee2 = randint(0, rangee1)
+    rangee3 = randint(rangee1)
+    permutation = [rangee1, rangee2, rangee3]
+
+    # On effectue le cyclique
+    if sens:
+        for profondeur in range(longeur_rangees):
+            memoire = positions[profondeur][0]
+            for index_rangee in range(nb_rangees - 1):
+                positions[profondeur][index_rangee] = positions[profondeur][index_rangee + 1]
+            positions[profondeur][-1] = memoire
+    else:
+        for profondeur in range(longeur_rangees):
+            memoire = positions[profondeur][-1]
+            for index_rangee in range(nb_rangees - 1, 0, -1):
+                positions[profondeur][index_rangee] = positions[profondeur][index_rangee - 1]
+            positions[profondeur][0] = memoire
+
+
 def permutation_cyclique(positions, sens):
     """
     Effectue une permatution cyclique des rangées.
@@ -95,7 +136,8 @@ def permutation_element(positions):
     # On prend 2 indices d'éléments différents
     element1 = [randint(0, longeur_rangees - 1), randint(0, nb_rangees - 1)]
     element2 = [randint(0, longeur_rangees - 1), randint(0, nb_rangees - 1)]
-    while element2[1] == element1[1]:
+    while element2[1] == element1[1] or element1 == element2:
+        element1[0] = randint(0, longeur_rangees - 1)
         element2[1] = randint(0, nb_rangees - 1)
 
     # On les échange
@@ -156,7 +198,7 @@ if __name__ == "__main__":
     NB_REF = len(PROBA)
 
     # Définition arbitraire de la longueur et du nombre des rangées
-    LONGUEUR_RANGEES = 1
+    LONGUEUR_RANGEES = 3
     NB_RANGEES = NB_REF // LONGUEUR_RANGEES
 
     # Calcul du S-Shape
@@ -169,7 +211,7 @@ if __name__ == "__main__":
     print(POSITIONS)
 
     # Calcul de la position optimale
-    POSITIONS_OPT = descente(POSITIONS, 10, PROBA, TEMPS_ENTREPOT)
+    POSITIONS_OPT = descente(POSITIONS, 100, PROBA, TEMPS_ENTREPOT)
     print("La solution trouvée est :")
     print(POSITIONS_OPT)
     VAL_NOTRE_ALGO = evalue_position(POSITIONS_OPT, TEMPS_ENTREPOT, PROBA)
