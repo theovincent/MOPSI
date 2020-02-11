@@ -3,7 +3,7 @@ Ce module permet de générer un historique de commande.
 Il s'agit en réalité des probobilités de chaque commande
 """
 
-from random import randint
+from numpy.random import randint, geometric
 from pulp import LpVariable, LpProblem, LpMinimize
 import numpy as np
 
@@ -36,75 +36,6 @@ def extraction_commande(path):
                 commande[index_line, index_ref] = line[index_ref]
 
     return commande
-
-
-def matrice_proba(nb_ref):
-    """
-    Permet de générer une matrice de probabilité de la forme
-    [alpha,          0       ,       0        ]
-    [  0  ,   alpha - epsilon,    epsilon     ]
-    [  0  ,      epsilon     , alpha - epsilon]
-    avec alpha une matrice de taille n / 3 avec le réelle alpha à tous les coefficients
-    sauf sur la diagonale où il y a des zéros. Pareil pour les autres blocs.
-
-    Parametres:
-        nb_ref (Entier positif) : nombre de référence dans l'entrepôt.
-
-    Return:
-        praba (Array de taille (nb_ref, nb_ref)): matrice des probabilités des commandes.
-
-    >>> proba = matrice_proba(6)
-    >>> proba.shape
-    (6, 6)
-    """
-    # -- Le nombre de référence doit être un multiple de 3 -- #
-    if nb_ref % 3 != 0 or nb_ref == 3:
-        raise DimensionError
-
-    # -- Paramètres -- #
-    # La norme 1 de proba doit être égale à 1
-    alpha_1 = (nb_ref / 3) * (nb_ref / 3 - 1) * 3
-    alpha = 1 / alpha_1
-    epsilon = alpha / randint(2, 10)
-    taille_bloc = nb_ref // 3
-
-    # -- Calcul des blocs -- #
-    diagonale = np.eye(taille_bloc)
-    bloc = np.ones((taille_bloc, taille_bloc)) - diagonale
-    bloc_alpha = bloc * alpha
-    bloc_epsilon = bloc * epsilon
-    bloc_nul = np.zeros((taille_bloc, taille_bloc))
-
-    # -- Calcul des lignes -- #
-    proba_ligne1 = np.concatenate((bloc_alpha, bloc_nul, bloc_nul), axis=1)
-    proba_ligne2 = np.concatenate((bloc_nul, bloc_alpha - bloc_epsilon, bloc_epsilon), axis=1)
-    proba_ligne3 = np.concatenate((bloc_nul, bloc_epsilon, bloc_alpha - bloc_epsilon), axis=1)
-    # Assemblage
-    probabilite = np.concatenate((proba_ligne1, proba_ligne2, proba_ligne3), axis=0)
-
-    return probabilite
-
-
-def norme_matrice(matrice):
-    """
-    Calcul la norme 1 d'une matrice.
-
-    Parametres:
-        matrice (Array de taille quelconque)
-
-    Return:
-        norme (Réel): norme 1 de la matrice.
-
-    >>> norme_matrice([[1, 3], [4, -4]])
-    12
-    """
-    norme = 0
-
-    for ligne in matrice:
-        for element in ligne:
-            norme += abs(element)
-
-    return norme
 
 
 def proba_to_jaccard(proba):
@@ -212,6 +143,149 @@ def jaccard_to_proba(jaccard):
     return probabilites
 
 
+def matrice_proba(nb_ref):
+    """
+    Permet de générer une matrice de probabilité de la forme
+    [alpha,          0       ,       0        ]
+    [  0  ,   alpha - epsilon,    epsilon     ]
+    [  0  ,      epsilon     , alpha - epsilon]
+    avec alpha une matrice de taille n / 3 avec le réelle alpha à tous les coefficients
+    sauf sur la diagonale où il y a des zéros. Pareil pour les autres blocs.
+
+    Parametres:
+        nb_ref (Entier positif) : nombre de référence dans l'entrepôt.
+
+    Return:
+        praba (Array de taille (nb_ref, nb_ref)): matrice des probabilités des commandes.
+
+    >>> proba = matrice_proba(6)
+    >>> proba.shape
+    (6, 6)
+    """
+    # -- Le nombre de référence doit être un multiple de 3 -- #
+    if nb_ref % 3 != 0 or nb_ref == 3:
+        raise DimensionError
+
+    # -- Paramètres -- #
+    alpha = randint(10, 50)
+    epsilon = alpha / randint(2, 10)
+    taille_bloc = nb_ref // 3
+
+    # -- Calcul des blocs -- #
+    diagonale = np.eye(taille_bloc)
+    bloc = np.ones((taille_bloc, taille_bloc)) - diagonale
+    bloc_alpha = bloc * alpha
+    bruit_proba(bloc_alpha)
+    bloc_epsilon = bloc * epsilon
+    bruit_proba(bloc_epsilon)
+    bloc_nul = np.zeros((taille_bloc, taille_bloc))
+
+    # -- Calcul des lignes -- #
+    proba_ligne1 = np.concatenate((bloc_alpha, bloc_nul, bloc_nul), axis=1)
+    proba_ligne2 = np.concatenate((bloc_nul, abs(bloc_alpha - bloc_epsilon), bloc_epsilon), axis=1)
+    proba_ligne3 = np.concatenate((bloc_nul, bloc_epsilon, abs(bloc_alpha - bloc_epsilon)), axis=1)
+    # Assemblage
+    probabilite = np.concatenate((proba_ligne1, proba_ligne2, proba_ligne3), axis=0)
+    probabilite /= norme_matrice(probabilite)
+    trie_proba(probabilite)
+
+    return probabilite / norme_matrice(probabilite)
+
+
+def minimum_matrice(matrice):
+    """
+    Calcul le minimum de la matrice
+    Parametres:
+        matrice (Array en deux dimension): matrice dont on veut calculer le minimum
+
+    Returns:
+        minimum (Entier): minimum de la matrice
+
+    >>> minimum_matrice(np.array([[], []]))
+    inf
+    >>> minimum_matrice(np.array([[0, 1], [-1, 1]]))
+    -1
+    """
+    (nb_ligne, nb_colonne) = matrice.shape
+    minimum = float('inf')
+    for ligne in range(nb_ligne):
+        for colonne in range(nb_colonne):
+            valeur = matrice[ligne, colonne]
+            if minimum > valeur:
+                minimum = valeur
+    return minimum
+
+
+def bruit_proba(proba):
+    """
+    Ajoute du bruit à une matrice. Fonction en place
+    Parametres:
+        proba (Array de deux dimensions): matrice dont on souhaite appliquer du bruit
+
+    Returns:
+        proba_bruit (Array de même taille de l'entrée): matrice bruitée.
+    """
+    nb_ref = len(proba)
+    moyenne_1 = 1 / 20
+    for refi in range(nb_ref):
+        for refj in range(refi + 1, nb_ref):
+            proba[refi, refj] *= geometric(moyenne_1)
+            proba[refj, refi] = proba[refi, refj]
+
+    # On calcul la partie positive et on normalise
+    minimum = minimum_matrice(proba)
+    proba -= minimum * (np.ones((nb_ref, nb_ref)) - np.eye(nb_ref))
+
+
+def trie_proba(proba):
+    """
+    Permet d'enlever certaines probabilités trop faible.
+    Au dessous d'un certain seuil, on annule la probabilité.
+    Un petit nombre de probabilité est multiplié par 100
+
+    Args:
+        proba (Array de deux dimensions): matrice des probabilités
+
+    Returns:
+        proba_triees (Array de même taille que l'entrée): matrice des probabilités triées
+    """
+    nb_ref = len(proba)
+
+    # Le seuil choisit est la moyenne du minimum et du maximum des probabilités
+    seuil = (minimum_matrice(proba) + -minimum_matrice(-proba)) / 2
+    for refi in range(nb_ref):
+        for refj in range(refi + 1, nb_ref):
+            # On annule la probabilité une fois sur 30
+            if randint(0, nb_ref * nb_ref / 2) == 0:
+                proba[refi, refj] *= 100
+                proba[refj, refi] *= 100
+            if proba[refi, refj] < seuil and randint(0, nb_ref) != 0:
+                proba[refi, refj] = 0
+                proba[refj, refi] = 0
+
+
+def norme_matrice(matrice):
+    """
+    Calcul la norme 1 d'une matrice.
+
+    Parametres:
+        matrice (Array de taille quelconque)
+
+    Return:
+        norme (Réel): norme 1 de la matrice.
+
+    >>> norme_matrice([[1, 3], [4, -4]])
+    12
+    """
+    norme = 0
+
+    for ligne in matrice:
+        for element in ligne:
+            norme += abs(element)
+
+    return norme
+
+
 def store_matrice(matrice, file_name):
     """
     Permet d'enregistrer la matrice en format texte.
@@ -261,9 +335,10 @@ if __name__ == "__main__":
     doctest.testmod()
 
     # -- Paramètres -- #
-    NB_REF = 60
+    NB_REF = 12
     PROBA = "test"
 
     generation_commande(NB_REF, PROBA)
     PROBA = extraction_commande("test.txt")
     print(PROBA)
+    print(-minimum_matrice(-PROBA))
