@@ -348,8 +348,8 @@ if __name__ == "__main__":
     doctest.testmod()
 
     # -- Paramètres -- #
-    NB_REF = 1
-    NB_RANGEES = 2
+    NB_REF = 0
+    NB_RANGEES = 3
     LONGUEUR_RANGEE = NB_REF // NB_RANGEES
     NOM_INSTANCE = "entrepot{}x{}_{}".format(LONGUEUR_RANGEE, NB_RANGEES, NB_REF)
 
