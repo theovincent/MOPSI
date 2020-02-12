@@ -23,8 +23,12 @@ def indice_jacquard(historique):
             for k in range(nb_ref):
                 denominateur += historique[i, k] + historique[j, k]
             denominateur -= historique[i, j]
-            J[i, j] = historique[i, j]/denominateur
-            J[j, i] = J[i, j]
+            if denominateur == 0:
+                J[i, j] = 0
+                J[j, i] = J[i, j]
+            else :
+                J[i, j] = historique[i, j]/denominateur
+                J[j, i] = J[i, j]
     return J
 
 
@@ -227,16 +231,16 @@ def jacquard(historique, nb_rangees, longueur_rangees, temps_entrepot, seuil):
         J_W = [J[i_max, ref] for ref in W]
         for iter in range(len(W)):
             # on cherche la référence (pas encore placée) la plus corrélé à i_max
-            j_max = W[np.argmax(J_W)]
+            j_max = np.argmax(J_W)
             # on cherche une place proche de i_max pour j_max
             place_pour_j = proche_place(positionnement, place_pour_i, temps_entrepot)
             # on place j_max
-            positionnement[place_pour_j[0], place_pour_j[1]] = j_max
+            positionnement[place_pour_j[0], place_pour_j[1]] = W[j_max]
             nb_restant -= 1
             # j_max ne pourra plus être sélectionné dans argmax des Jacquard
             J_W[j_max] = -1
             # j_max ne pourra plus être sélectionné dans argmax des freq
-            frequence[j_max] = -1
+            frequence[W[j_max]] = -1
 
     return positionnement
 
